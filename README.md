@@ -4,14 +4,26 @@ Dashboard interativa criada a partir da planilha sanitizada de 100 vendas da Por
 
 **Dashboard publicada:** https://kauan-beep.github.io/excel-ia-dashboard-porsche/
 
-
-
-![Print da dashboard](prints/dashboard.png)
-
+### Dashboard completa
 
 
 
-![Filtro aplicado](prints/filtro-aplicado.png)
+![Tela inicial com 100 vendas](Screenshot_20261030_134526_Chrome.jpg)
+
+
+
+### Exemplo de filtro aplicado: família Macan
+
+Ao escolher a família Macan, o total cai de 100 para 17 vendas, a receita para US$ 1,3 mi e o ticket médio para US$ 78.726. Entre os Macan, o ano de modelo 2022 lidera e Financing passa a ser a forma de pagamento mais usada.
+
+
+
+![Filtro Macan aplicado](Screenshot_20261030_134843_Chrome.jpg)
+
+
+
+
+![Gráficos com o filtro Macan](Screenshot_20261030_134857_Chrome.jpg)
 
 
 
@@ -65,4 +77,4 @@ O que mudou até a versão final:
 ## Arquivos
 
 - `index.html`: a dashboard completa (HTML, CSS e JavaScript), com a base embutida.
-- `prints/`: capturas de tela da dashboard.
+- Imagens `Screenshot_*.jpg`: capturas de tela da dashboard, sem filtro e com o filtro Macan.
