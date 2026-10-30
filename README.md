@@ -1,6 +1,6 @@
 # Excel com IA: dashboard de vendas Porsche
 
-Dashboard interativa criada a partir de uma planilha de 100 vendas da Porsche, com a liberdade visual que os gráficos do Excel não dão. Projeto do desafio "Criando uma Dashboard da Porsche com Agentes de IA" (DIO).
+Dashboard interativa criada a partir da planilha sanitizada de 100 vendas da Porsche (desafio "Criando uma Dashboard da Porsche com Agentes de IA", DIO), com a liberdade visual que os gráficos do Excel não dão.
 
 **Dashboard publicada:** https://kauan-beep.github.io/excel-ia-dashboard-porsche/
 
@@ -11,61 +11,58 @@ Dashboard interativa criada a partir de uma planilha de 100 vendas da Porsche, c
 
 
 
-![Filtro aplicado: modelo Macan](prints/filtro-aplicado.png)
+![Filtro aplicado](prints/filtro-aplicado.png)
 
 
 
 ## Perguntas de negócio
 
-1. **Quais modelos geram mais receita?** Mostra onde está o dinheiro. Um modelo pode vender muito e render pouco, ou o contrário.
-2. **Como a receita evoluiu por ano?** Mostra se o negócio cresce e qual ano foi o melhor.
-3. **Como os clientes pagam?** Mostra o peso de cada forma de pagamento, útil para decidir onde oferecer condições.
+1. **Quais famílias de modelos geram mais receita?** (911, Cayenne, Macan, Taycan, Panamera e 718). Agrupei os 40 modelos em 6 famílias, porque 40 barras não se leem em uma tela.
+2. **Qual ano do modelo concentra mais receita?** Mostra quais anos de fabricação mais vendem.
+3. **Como os clientes pagam?** Mostra o peso de cada forma de pagamento (transferência, cartão, financiamento, à vista, leasing e outras).
 
 Cada gráfico tem uma frase de leitura que se atualiza com os filtros.
 
 ## Indicadores e filtros
 
-- Indicadores de topo: total de vendas, receita total e ticket médio.
-- Filtros: modelo, estado, cidade, ano e método de pagamento.
+- Indicadores de topo: total de vendas, receita total (US$) e ticket médio.
+- Filtros: família, modelo, estado, cidade, ano do modelo, forma de pagamento e status de entrega.
 - Botão para limpar filtros e opção de carregar outra base em CSV.
 
 ## Tratamento da base antes da IA
 
-- Mantive só as colunas sanitizadas: modelo, cidade, estado, ano, preço e método de pagamento.
-- Converti preço e ano para número.
-- Colei tudo como valores, sem fórmulas, para não sobrar referência quebrada.
+- Usei só as colunas sanitizadas: `PorscheModelSanitized`, `ModelYearSanitized`, `SalesPriceSanitized`, `PayMethodSanitized`, `CitySanitized`, `StateSanitized` e `DeliveryStatusSanitized`.
+- Preço e ano já estavam como número; conferi que não havia células vazias nessas colunas.
+- A coluna `SaleDateSanitized` tem 24 registros `INVALID` em 100. Por isso a pergunta por ano usa o **ano do modelo**, e não a data da venda.
+- Criei a "família" do modelo a partir da primeira palavra do nome (por exemplo, "Macan GTS" vira "Macan").
 - Embuti os dados no HTML.
-- Conferi que não há dado sensível na base, porque ela fica pública.
+- Não usei nome de cliente nem de vendedor, para não expor dado pessoal em um repositório público.
 
 ## Prompt
 
 ```
-Tenho uma planilha com 100 vendas da Porsche (modelo, cidade, estado, ano, preço, método de pagamento).
+Tenho uma planilha com 100 vendas da Porsche (modelo, cidade, estado, ano do modelo, preço em dólar,
+forma de pagamento e status de entrega).
 Crie uma dashboard em HTML de arquivo único que responda 3 perguntas:
-1) quais modelos geram mais receita, 2) como a receita evolui por ano, 3) como os clientes pagam.
-Inclua filtros por modelo, estado, cidade, ano e pagamento, e indicadores de topo
-com total de vendas, receita e ticket médio. Dados embutidos no HTML, sem bibliotecas externas.
+1) quais famílias de modelos geram mais receita, 2) qual ano do modelo concentra mais receita,
+3) como os clientes pagam. Inclua filtros por família, modelo, estado, cidade, ano, pagamento e entrega,
+e indicadores de topo com total de vendas, receita e ticket médio. Dados embutidos no HTML, sem bibliotecas externas.
 ```
 
 O que mudou até a versão final:
 
-- Troquei os gráficos por barras feitas em HTML/CSS, para funcionar sem internet e sem biblioteca.
-- Adicionei a frase de leitura abaixo de cada pergunta.
-- Adicionei o botão de carregar CSV e o modo escuro automático.
+- Troquei os gráficos por barras em HTML/CSS, para funcionar sem internet e sem biblioteca.
+- Adicionei uma frase de leitura abaixo de cada pergunta.
+- Troquei o eixo "ano da venda" por "ano do modelo", por causa dos registros `INVALID` nas datas.
+- Agrupei os modelos em famílias.
 - Defini a paleta: cinza-grafite, branco gelo e vermelho Porsche como destaque.
 
 ## Ferramentas usadas
 
-- Excel para preparar a base.
+- Excel para ler e conferir a base sanitizada.
 - IA (Claude) para gerar e refinar o HTML.
 
 ## Arquivos
 
-- `index.html`: a dashboard completa (HTML, CSS e JavaScript).
+- `index.html`: a dashboard completa (HTML, CSS e JavaScript), com a base embutida.
 - `prints/`: capturas de tela da dashboard.
-
-## Como publicar
-
-1. Crie o repositório público `excel-ia-dashboard-porsche`.
-2. Envie `index.html`, `README.md` e a pasta `prints`.
-3. Em Settings, Pages, escolha a branch `main` e a pasta `/ (root)`.
