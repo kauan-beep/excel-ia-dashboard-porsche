@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard de vendas Porsche</title>
+<style>
+:root{
+  --fundo:#e4e7ea; --painel:#f6f7f8; --tinta:#14181c; --suave:#5b646c;
+  --linha:#c5cacf; --vermelho:#c8102e; --grafite:#2a3036;
+  --titulo:"Bahnschrift","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --texto:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{--fundo:#101316; --painel:#1a1f24; --tinta:#eef0f2; --suave:#9aa3ab; --linha:#2f363d; --grafite:#d5d9dd;}
+}
+*{box-sizing:border-box}
+html{height:100%}
+body{margin:0;background:var(--fundo);color:var(--tinta);font-family:var(--texto);line-height:1.5}
+.pagina{max-width:1100px;margin:0 auto;padding:20px 16px 40px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;border-bottom:4px solid var(--vermelho);padding-bottom:14px}
+h1{font-family:var(--titulo);font-weight:700;font-size:clamp(2rem,6vw,3.4rem);line-height:1;margin:0;letter-spacing:-.01em}
+.sub{margin:6px 0 0;color:var(--suave);max-width:60ch}
+.carregar{font-size:.85rem;color:var(--suave)}
+.carregar label{cursor:pointer;text-decoration:underline}
+.carregar input{display:none}
+.filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.filtros label{display:flex;flex-direction:column;font-size:.8rem;color:var(--suave);gap:4px}
+select,button{font:inherit;font-size:.95rem;padding:9px 10px;border:1px solid var(--linha);border-radius:4px;background:var(--painel);color:var(--tinta)}
+button{cursor:pointer;background:var(--grafite);color:var(--fundo);border-color:var(--grafite);align-self:end}
+:focus-visible{outline:3px solid var(--vermelho);outline-offset:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));border:1px solid var(--linha);background:var(--painel)}
+.kpi{padding:16px 18px;border-right:1px solid var(--linha)}
+.kpi:last-child{border-right:0}
+.kpi span{display:block;font-size:.8rem;color:var(--suave)}
+.kpi strong{font-family:var(--titulo);font-size:clamp(1.6rem,4.5vw,2.3rem);line-height:1.1;font-weight:700}
+.kpi.destaque strong{color:var(--vermelho)}
+.grade{display:grid;gap:16px;margin-top:16px;grid-template-columns:1fr}
+@media(min-width:860px){.grade{grid-template-columns:1.2fr 1fr}.larga{grid-column:1/-1}}
+.cartao{background:var(--painel);border:1px solid var(--linha);padding:18px}
+.cartao h2{font-family:var(--titulo);font-size:1.25rem;margin:0 0 4px}
+.leitura{margin:0 0 14px;color:var(--suave);font-size:.9rem;min-height:2.6em}
+.barra{display:grid;grid-template-columns:110px 1fr 92px;gap:8px;align-items:center;margin:7px 0;font-size:.9rem}
+.barra .trilho{background:var(--linha);height:14px;border-radius:2px;overflow:hidden}
+.barra .preenche{display:block;height:100%;background:var(--grafite)}
+.barra.topo .preenche{background:var(--vermelho)}
+.barra .valor{text-align:right;font-variant-numeric:tabular-nums}
+.colunas{display:flex;align-items:flex-end;gap:10px;height:200px;border-bottom:2px solid var(--grafite);padding-top:10px}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:.8rem}
+.col .pilar{width:100%;background:var(--grafite);min-height:2px}
+.col.topo .pilar{background:var(--vermelho)}
+.col b{font-weight:600;margin-bottom:3px;font-variant-numeric:tabular-nums}
+.anos{display:flex;gap:10px;font-size:.85rem;color:var(--suave)}
+.anos span{flex:1;text-align:center;padding-top:5px}
+.vazio{color:var(--suave);padding:20px 0}
+footer{margin-top:22px;font-size:.8rem;color:var(--suave)}
+@media(max-width:560px){.barra{grid-template-columns:90px 1fr 74px;font-size:.82rem}.kpi{border-right:0;border-bottom:1px solid var(--linha)}}
+</style>
+</head>
+<body>
+<div class="pagina">
+<header>
+  <div>
+    <h1>Vendas Porsche</h1>
+    <p class="sub">Quais modelos, anos e formas de pagamento sustentam a receita. Use os filtros para recortar os dados.</p>
+  </div>
+  <div class="carregar"><label>Carregar outra base (.csv)<input type="file" id="arquivo" accept=".csv"></label></div>
+</header>
+
+<section class="filtros" aria-label="Filtros">
+  <label>Modelo<select id="f-modelo"></select></label>
+  <label>Estado<select id="f-estado"></select></label>
+  <label>Cidade<select id="f-cidade"></select></label>
+  <label>Ano<select id="f-ano"></select></label>
+  <label>Pagamento<select id="f-pagamento"></select></label>
+  <button id="limpar" type="button">Limpar filtros</button>
+</section>
+
+<section class="kpis" aria-label="Indicadores">
+  <div class="kpi"><span>Total de vendas</span><strong id="k-vendas">0</strong></div>
+  <div class="kpi destaque"><span>Receita total</span><strong id="k-receita">0</strong></div>
+  <div class="kpi"><span>Ticket médio</span><strong id="k-ticket">0</strong></div>
+</section>
+
+<main class="grade">
+  <article class="cartao">
+    <h2>Quais modelos geram mais receita?</h2>
+    <p class="leitura" id="l-modelo"></p>
+    <div id="g-modelo"></div>
+  </article>
+  <article class="cartao">
+    <h2>Como a receita evoluiu por ano?</h2>
+    <p class="leitura" id="l-ano"></p>
+    <div id="g-ano"></div>
+  </article>
+  <article class="cartao larga">
+    <h2>Como os clientes pagam?</h2>
+    <p class="leitura" id="l-pag"></p>
+    <div id="g-pag"></div>
+  </article>
+</main>
+<footer id="rodape"></footer>
+</div>
+
+<script>
+// ===== BASE EMBUTIDA: modelo;cidade;estado;ano;preco;pagamento =====
+const BRUTO = `
+Macan;Porto Alegre;RS;2025;458000;À vista
+Macan;São Paulo;SP;2024;573000;Leasing
+Macan;Porto Alegre;RS;2022;458000;Consórcio
+Cayenne;São Paulo;SP;2022;701000;Consórcio
+911;Campinas;SP;2024;1031000;À vista
+Cayenne;Rio de Janeiro;RJ;2022;887000;À vista
+Macan;Curitiba;PR;2022;607000;À vista
+Cayenne;São Paulo;SP;2022;795000;Financiamento
+718 Cayman;Curitiba;PR;2022;626000;À vista
+Taycan;Porto Alegre;RS;2021;879000;Financiamento
+Panamera;Campinas;SP;2024;1028000;À vista
+Panamera;Recife;PE;2024;918000;Financiamento
+Cayenne;São Paulo;SP;2023;679000;Consórcio
+Macan;São Paulo;SP;2021;502000;Consórcio
+Taycan;Rio de Janeiro;RJ;2025;750000;Consórcio
+Macan;Curitiba;PR;2024;592000;Leasing
+Cayenne;São Paulo;SP;2023;828000;Leasing
+Cayenne;Campinas;SP;2021;708000;Financiamento
+Cayenne;São Paulo;SP;2025;741000;Consórcio
+Cayenne;Curitiba;PR;2023;725000;Financiamento
+Cayenne;São Paulo;SP;2022;768000;Leasing
+Macan;Porto Alegre;RS;2023;508000;À vista
+Panamera;São Paulo;SP;2024;1002000;À vista
+Macan;Brasília;DF;2021;477000;Financiamento
+Macan;São Paulo;SP;2023;607000;À vista
+Cayenne;Rio de Janeiro;RJ;2023;851000;À vista
+Macan;Recife;PE;2024;443000;À vista
+Cayenne;Brasília;DF;2023;680000;À vista
+Macan;Brasília;DF;2023;574000;Consórcio
+Cayenne;Curitiba;PR;2023;866000;Financiamento
+911;Brasília;DF;2024;1251000;Leasing
+Panamera;São Paulo;SP;2023;897000;Consórcio
+718 Cayman;Belo Horizonte;MG;2023;613000;À vista
+Macan;Rio de Janeiro;RJ;2022;536000;Leasing
+Panamera;São Paulo;SP;2021;730000;Consórcio
+Cayenne;Belo Horizonte;MG;2022;667000;Leasing
+Panamera;Campinas;SP;2024;741000;À vista
+911;São Paulo;SP;2023;809000;Consórcio
+Panamera;Campinas;SP;2023;708000;À vista
+Taycan;Rio de Janeiro;RJ;2022;1003000;À vista
+911;Curitiba;PR;2023;1106000;Consórcio
+Cayenne;Rio de Janeiro;RJ;2025;801000;À vista
+Taycan;Rio de Janeiro;RJ;2024;740000;Financiamento
+Taycan;Campinas;SP;2022;871000;Leasing
+Taycan;Porto Alegre;RS;2025;796000;Financiamento
+911;Rio de Janeiro;RJ;2024;1030000;Leasing
+Macan;Brasília;DF;2023;533000;Leasing
+Cayenne;São Paulo;SP;2024;648000;Financiamento
+911;Brasília;DF;2023;1190000;À vista
+Taycan;Rio de Janeiro;RJ;2021;913000;Leasing
+718 Cayman;Rio de Janeiro;RJ;2025;755000;Financiamento
+718 Cayman;Brasília;DF;2021;770000;À vista
+Cayenne;São Paulo;SP;2025;716000;À vista
+Cayenne;Brasília;DF;2021;660000;Consórcio
+Macan;Rio de Janeiro;RJ;2024;458000;Leasing
+Macan;Belo Horizonte;MG;2021;493000;À vista
+911;Brasília;DF;2024;1252000;À vista
+911;São Paulo;SP;2021;1087000;À vista
+Macan;Campinas;SP;2022;483000;Financiamento
+Macan;Brasília;DF;2025;464000;Leasing
+Macan;Recife;PE;2025;632000;Consórcio
+Macan;São Paulo;SP;2024;542000;Leasing
+911;São Paulo;SP;2022;1224000;Leasing
+911;Rio de Janeiro;RJ;2025;1289000;Financiamento
+Cayenne;Belo Horizonte;MG;2024;810000;À vista
+911;Rio de Janeiro;RJ;2024;1022000;Financiamento
+Macan;São Paulo;SP;2021;520000;À vista
+Taycan;São Paulo;SP;2021;1068000;À vista
+911;Curitiba;PR;2022;1332000;À vista
+911;Rio de Janeiro;RJ;2024;1203000;Leasing
+Macan;Rio de Janeiro;RJ;2025;614000;À vista
+Macan;Campinas;SP;2024;492000;Consórcio
+Taycan;Curitiba;PR;2022;1121000;Leasing
+Macan;Rio de Janeiro;RJ;2024;481000;Financiamento
+911;São Paulo;SP;2024;983000;Financiamento
+911;Brasília;DF;2021;1315000;Leasing
+911;Recife;PE;2025;1152000;Financiamento
+Macan;São Paulo;SP;2021;456000;Financiamento
+911;São Paulo;SP;2024;1114000;Financiamento
+Taycan;São Paulo;SP;2024;989000;Consórcio
+Cayenne;Rio de Janeiro;RJ;2021;777000;À vista
+Cayenne;Rio de Janeiro;RJ;2025;858000;Financiamento
+Macan;Curitiba;PR;2024;604000;À vista
+Macan;São Paulo;SP;2021;546000;Financiamento
+Macan;São Paulo;SP;2023;633000;À vista
+Cayenne;Belo Horizonte;MG;2025;735000;À vista
+718 Cayman;Curitiba;PR;2022;762000;Financiamento
+Taycan;Curitiba;PR;2023;1022000;Consórcio
+Cayenne;Curitiba;PR;2024;724000;Leasing
+911;Brasília;DF;2024;1237000;À vista
+Macan;São Paulo;SP;2025;523000;Financiamento
+Macan;Belo Horizonte;MG;2021;463000;Leasing
+Panamera;Curitiba;PR;2025;836000;Financiamento
+Cayenne;Curitiba;PR;2023;666000;Financiamento
+Cayenne;São Paulo;SP;2022;814000;À vista
+Taycan;São Paulo;SP;2025;1109000;À vista
+Taycan;São Paulo;SP;2024;713000;À vista
+718 Cayman;Curitiba;PR;2025;529000;À vista
+Panamera;São Paulo;SP;2024;962000;Consórcio
+Macan;Belo Horizonte;MG;2024;530000;À vista
+`;
+let DADOS = BRUTO.trim().split("\n").map(l=>{
+  const [modelo,cidade,estado,ano,preco,pagamento]=l.split(";");
+  return {modelo,cidade,estado,ano:Number(ano),preco:Number(preco),pagamento};
+});
+// ====================================================================
+
+const $ = id => document.getElementById(id);
+const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
+const curto = v => v>=1e6 ? "R$ "+(v/1e6).toFixed(1).replace(".",",")+" mi" : "R$ "+Math.round(v/1e3)+" mil";
+const pct = v => (v*100).toFixed(0)+"%";
+const CAMPOS = {modelo:"f-modelo",estado:"f-estado",cidade:"f-cidade",ano:"f-ano",pagamento:"f-pagamento"};
+const ROTULO = {modelo:"Todos os modelos",estado:"Todos os estados",cidade:"Todas as cidades",ano:"Todos os anos",pagamento:"Todos os pagamentos"};
+
+function montarFiltros(){
+  for(const c in CAMPOS){
+    const valores=[...new Set(DADOS.map(d=>d[c]))].sort((a,b)=>String(a).localeCompare(String(b),"pt-BR",{numeric:true}));
+    $(CAMPOS[c]).innerHTML='<option value="">'+ROTULO[c]+'</option>'+valores.map(v=>`<option value="${v}">${v}</option>`).join("");
+  }
+}
+function filtrados(){
+  return DADOS.filter(d=>Object.keys(CAMPOS).every(c=>{const v=$(CAMPOS[c]).value;return !v||String(d[c])===v}));
+}
+function somar(lista,chave){
+  const m={};
+  lista.forEach(d=>{const k=d[chave];m[k]=m[k]||{n:0,r:0};m[k].n++;m[k].r+=d.preco});
+  return Object.entries(m).map(([nome,o])=>({nome,n:o.n,r:o.r}));
+}
+function barras(el,itens){
+  if(!itens.length){el.innerHTML='<p class="vazio">Nenhuma venda com esses filtros.</p>';return}
+  const max=Math.max(...itens.map(i=>i.r));
+  el.innerHTML=itens.map((i,k)=>`<div class="barra ${k===0?"topo":""}">
+    <span>${i.nome}</span><span class="trilho"><span class="preenche" style="width:${(i.r/max*100).toFixed(1)}%"></span></span>
+    <span class="valor">${curto(i.r)}</span></div>`).join("");
+}
+function render(){
+  const L=filtrados(), receita=L.reduce((s,d)=>s+d.preco,0);
+  $("k-vendas").textContent=L.length;
+  $("k-receita").textContent=curto(receita);
+  $("k-ticket").textContent=L.length?brl(receita/L.length):"–";
+  $("rodape").textContent=`Mostrando ${L.length} de ${DADOS.length} vendas.`;
+
+  const mod=somar(L,"modelo").sort((a,b)=>b.r-a.r);
+  barras($("g-modelo"),mod);
+  $("l-modelo").textContent=mod.length?`${mod[0].nome} lidera com ${pct(mod[0].r/receita)} da receita (${mod[0].n} vendas).`:"Sem dados para este recorte.";
+
+  const anos=somar(L,"ano").sort((a,b)=>a.nome-b.nome);
+  const maxA=Math.max(0,...anos.map(a=>a.r));
+  const topoA=anos.reduce((t,a)=>!t||a.r>t.r?a:t,null);
+  $("g-ano").innerHTML=anos.length?`<div class="colunas">${anos.map(a=>`<div class="col ${a===topoA?"topo":""}"><b>${curto(a.r)}</b><div class="pilar" style="height:${(a.r/maxA*80).toFixed(1)}%"></div></div>`).join("")}</div>
+    <div class="anos">${anos.map(a=>`<span>${a.nome}</span>`).join("")}</div>`:'<p class="vazio">Nenhuma venda com esses filtros.</p>';
+  $("l-ano").textContent=topoA?`O melhor ano foi ${topoA.nome}, com ${curto(topoA.r)} em ${topoA.n} vendas.`:"Sem dados para este recorte.";
+
+  const pag=somar(L,"pagamento").sort((a,b)=>b.n-a.n);
+  const el=$("g-pag");
+  if(!pag.length){el.innerHTML='<p class="vazio">Nenhuma venda com esses filtros.</p>'}
+  else{const max=pag[0].n;
+    el.innerHTML=pag.map((p,k)=>`<div class="barra ${k===0?"topo":""}"><span>${p.nome}</span><span class="trilho"><span class="preenche" style="width:${(p.n/max*100).toFixed(1)}%"></span></span><span class="valor">${p.n} (${pct(p.n/L.length)})</span></div>`).join("")}
+  $("l-pag").textContent=pag.length?`${pag[0].nome} é a forma mais usada: ${pct(pag[0].n/L.length)} das vendas.`:"Sem dados para este recorte.";
+}
+Object.values(CAMPOS).forEach(id=>$(id).addEventListener("change",render));
+$("limpar").addEventListener("click",()=>{Object.values(CAMPOS).forEach(id=>$(id).value="");render()});
+
+$("arquivo").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const linhas=r.result.trim().split(/\r?\n/);
+    const sep=linhas[0].includes(";")?";":",";
+    const cab=linhas[0].split(sep).map(s=>s.trim().toLowerCase());
+    const novos=linhas.slice(1).map(l=>{const c=l.split(sep);const o={};cab.forEach((h,i)=>o[h]=(c[i]||"").trim());
+      o.ano=Number(o.ano);o.preco=Number(String(o.preco).replace(/[^\d.,-]/g,"").replace(/\.(?=\d{3})/g,"").replace(",","."));return o})
+      .filter(o=>o.modelo&&o.ano&&o.preco);
+    if(!novos.length){alert("Não encontrei linhas válidas. O CSV precisa das colunas: modelo, cidade, estado, ano, preco, pagamento.");return}
+    DADOS=novos;montarFiltros();render();
+  };
+  r.readAsText(f);
+});
+montarFiltros();render();
+</script>
+</body>
+</html>
