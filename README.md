@@ -2,7 +2,7 @@
 
 Dashboard interativa criada a partir de uma planilha de 100 vendas da Porsche, com a liberdade visual que os gráficos do Excel não dão. Projeto do desafio "Criando uma Dashboard da Porsche com Agentes de IA" (DIO).
 
-**Dashboard publicada:** https://SEU-USUARIO.github.io/excel-ia-dashboard-porsche/
+**Dashboard publicada:** https://kauan-beep.github.io/excel-ia-dashboard-porsche/
 
 
 
