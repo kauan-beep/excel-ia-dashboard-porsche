@@ -24,7 +24,7 @@ h1{font-family:var(--titulo);font-weight:700;font-size:clamp(2rem,6vw,3.4rem);li
 .carregar{font-size:.85rem;color:var(--suave)}
 .carregar label{cursor:pointer;text-decoration:underline}
 .carregar input{display:none}
-.filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0}
 .filtros label{display:flex;flex-direction:column;font-size:.8rem;color:var(--suave);gap:4px}
 select,button{font:inherit;font-size:.95rem;padding:9px 10px;border:1px solid var(--linha);border-radius:4px;background:var(--painel);color:var(--tinta)}
 button{cursor:pointer;background:var(--grafite);color:var(--fundo);border-color:var(--grafite);align-self:end}
@@ -62,17 +62,19 @@ footer{margin-top:22px;font-size:.8rem;color:var(--suave)}
 <header>
   <div>
     <h1>Vendas Porsche</h1>
-    <p class="sub">Quais modelos, anos e formas de pagamento sustentam a receita. Use os filtros para recortar os dados.</p>
+    <p class="sub">Quais famílias, anos de modelo e formas de pagamento sustentam a receita em dólar. Use os filtros para recortar os dados.</p>
   </div>
   <div class="carregar"><label>Carregar outra base (.csv)<input type="file" id="arquivo" accept=".csv"></label></div>
 </header>
 
 <section class="filtros" aria-label="Filtros">
+  <label>Família<select id="f-familia"></select></label>
   <label>Modelo<select id="f-modelo"></select></label>
   <label>Estado<select id="f-estado"></select></label>
   <label>Cidade<select id="f-cidade"></select></label>
   <label>Ano<select id="f-ano"></select></label>
   <label>Pagamento<select id="f-pagamento"></select></label>
+  <label>Entrega<select id="f-entrega"></select></label>
   <button id="limpar" type="button">Limpar filtros</button>
 </section>
 
@@ -84,12 +86,12 @@ footer{margin-top:22px;font-size:.8rem;color:var(--suave)}
 
 <main class="grade">
   <article class="cartao">
-    <h2>Quais modelos geram mais receita?</h2>
+    <h2>Quais famílias de modelos geram mais receita?</h2>
     <p class="leitura" id="l-modelo"></p>
     <div id="g-modelo"></div>
   </article>
   <article class="cartao">
-    <h2>Como a receita evoluiu por ano?</h2>
+    <h2>Qual ano do modelo concentra mais receita?</h2>
     <p class="leitura" id="l-ano"></p>
     <div id="g-ano"></div>
   </article>
@@ -103,121 +105,123 @@ footer{margin-top:22px;font-size:.8rem;color:var(--suave)}
 </div>
 
 <script>
-// ===== BASE EMBUTIDA: modelo;cidade;estado;ano;preco;pagamento =====
+// ===== BASE EMBUTIDA (colunas sanitizadas da planilha da DIO) =====
+// modelo;cidade;estado;ano do modelo;preco (US$);pagamento;entrega
 const BRUTO = `
-Macan;Porto Alegre;RS;2025;458000;À vista
-Macan;São Paulo;SP;2024;573000;Leasing
-Macan;Porto Alegre;RS;2022;458000;Consórcio
-Cayenne;São Paulo;SP;2022;701000;Consórcio
-911;Campinas;SP;2024;1031000;À vista
-Cayenne;Rio de Janeiro;RJ;2022;887000;À vista
-Macan;Curitiba;PR;2022;607000;À vista
-Cayenne;São Paulo;SP;2022;795000;Financiamento
-718 Cayman;Curitiba;PR;2022;626000;À vista
-Taycan;Porto Alegre;RS;2021;879000;Financiamento
-Panamera;Campinas;SP;2024;1028000;À vista
-Panamera;Recife;PE;2024;918000;Financiamento
-Cayenne;São Paulo;SP;2023;679000;Consórcio
-Macan;São Paulo;SP;2021;502000;Consórcio
-Taycan;Rio de Janeiro;RJ;2025;750000;Consórcio
-Macan;Curitiba;PR;2024;592000;Leasing
-Cayenne;São Paulo;SP;2023;828000;Leasing
-Cayenne;Campinas;SP;2021;708000;Financiamento
-Cayenne;São Paulo;SP;2025;741000;Consórcio
-Cayenne;Curitiba;PR;2023;725000;Financiamento
-Cayenne;São Paulo;SP;2022;768000;Leasing
-Macan;Porto Alegre;RS;2023;508000;À vista
-Panamera;São Paulo;SP;2024;1002000;À vista
-Macan;Brasília;DF;2021;477000;Financiamento
-Macan;São Paulo;SP;2023;607000;À vista
-Cayenne;Rio de Janeiro;RJ;2023;851000;À vista
-Macan;Recife;PE;2024;443000;À vista
-Cayenne;Brasília;DF;2023;680000;À vista
-Macan;Brasília;DF;2023;574000;Consórcio
-Cayenne;Curitiba;PR;2023;866000;Financiamento
-911;Brasília;DF;2024;1251000;Leasing
-Panamera;São Paulo;SP;2023;897000;Consórcio
-718 Cayman;Belo Horizonte;MG;2023;613000;À vista
-Macan;Rio de Janeiro;RJ;2022;536000;Leasing
-Panamera;São Paulo;SP;2021;730000;Consórcio
-Cayenne;Belo Horizonte;MG;2022;667000;Leasing
-Panamera;Campinas;SP;2024;741000;À vista
-911;São Paulo;SP;2023;809000;Consórcio
-Panamera;Campinas;SP;2023;708000;À vista
-Taycan;Rio de Janeiro;RJ;2022;1003000;À vista
-911;Curitiba;PR;2023;1106000;Consórcio
-Cayenne;Rio de Janeiro;RJ;2025;801000;À vista
-Taycan;Rio de Janeiro;RJ;2024;740000;Financiamento
-Taycan;Campinas;SP;2022;871000;Leasing
-Taycan;Porto Alegre;RS;2025;796000;Financiamento
-911;Rio de Janeiro;RJ;2024;1030000;Leasing
-Macan;Brasília;DF;2023;533000;Leasing
-Cayenne;São Paulo;SP;2024;648000;Financiamento
-911;Brasília;DF;2023;1190000;À vista
-Taycan;Rio de Janeiro;RJ;2021;913000;Leasing
-718 Cayman;Rio de Janeiro;RJ;2025;755000;Financiamento
-718 Cayman;Brasília;DF;2021;770000;À vista
-Cayenne;São Paulo;SP;2025;716000;À vista
-Cayenne;Brasília;DF;2021;660000;Consórcio
-Macan;Rio de Janeiro;RJ;2024;458000;Leasing
-Macan;Belo Horizonte;MG;2021;493000;À vista
-911;Brasília;DF;2024;1252000;À vista
-911;São Paulo;SP;2021;1087000;À vista
-Macan;Campinas;SP;2022;483000;Financiamento
-Macan;Brasília;DF;2025;464000;Leasing
-Macan;Recife;PE;2025;632000;Consórcio
-Macan;São Paulo;SP;2024;542000;Leasing
-911;São Paulo;SP;2022;1224000;Leasing
-911;Rio de Janeiro;RJ;2025;1289000;Financiamento
-Cayenne;Belo Horizonte;MG;2024;810000;À vista
-911;Rio de Janeiro;RJ;2024;1022000;Financiamento
-Macan;São Paulo;SP;2021;520000;À vista
-Taycan;São Paulo;SP;2021;1068000;À vista
-911;Curitiba;PR;2022;1332000;À vista
-911;Rio de Janeiro;RJ;2024;1203000;Leasing
-Macan;Rio de Janeiro;RJ;2025;614000;À vista
-Macan;Campinas;SP;2024;492000;Consórcio
-Taycan;Curitiba;PR;2022;1121000;Leasing
-Macan;Rio de Janeiro;RJ;2024;481000;Financiamento
-911;São Paulo;SP;2024;983000;Financiamento
-911;Brasília;DF;2021;1315000;Leasing
-911;Recife;PE;2025;1152000;Financiamento
-Macan;São Paulo;SP;2021;456000;Financiamento
-911;São Paulo;SP;2024;1114000;Financiamento
-Taycan;São Paulo;SP;2024;989000;Consórcio
-Cayenne;Rio de Janeiro;RJ;2021;777000;À vista
-Cayenne;Rio de Janeiro;RJ;2025;858000;Financiamento
-Macan;Curitiba;PR;2024;604000;À vista
-Macan;São Paulo;SP;2021;546000;Financiamento
-Macan;São Paulo;SP;2023;633000;À vista
-Cayenne;Belo Horizonte;MG;2025;735000;À vista
-718 Cayman;Curitiba;PR;2022;762000;Financiamento
-Taycan;Curitiba;PR;2023;1022000;Consórcio
-Cayenne;Curitiba;PR;2024;724000;Leasing
-911;Brasília;DF;2024;1237000;À vista
-Macan;São Paulo;SP;2025;523000;Financiamento
-Macan;Belo Horizonte;MG;2021;463000;Leasing
-Panamera;Curitiba;PR;2025;836000;Financiamento
-Cayenne;Curitiba;PR;2023;666000;Financiamento
-Cayenne;São Paulo;SP;2022;814000;À vista
-Taycan;São Paulo;SP;2025;1109000;À vista
-Taycan;São Paulo;SP;2024;713000;À vista
-718 Cayman;Curitiba;PR;2025;529000;À vista
-Panamera;São Paulo;SP;2024;962000;Consórcio
-Macan;Belo Horizonte;MG;2024;530000;À vista
+718 Cayman;Boston;MA;2022;79500;Credit Card;Delivered
+911 Turbo S;Seattle;WA;2024;235000;Wire Transfer;Delivered
+Cayenne Coupe;Austin;TX;2023;112750;Financing;In Transit
+Macan S;Denver;CO;2021;68900;Cash;Pending
+Taycan 4S;Los Angeles;CA;2024;121000;Bank Transfer;Delivered
+Panamera 4;Miami;FL;2023;104500;Credit Card;Cancelled
+911 Carrera S;New York;NY;2020;96300;Lease;Delivered
+Cayenne E-Hybrid;San Diego;CA;2022;89750;Wire Transfer;Pending Approval
+718 Boxster;Chicago;IL;2021;73500;Debit Card;Shipped
+Macan GTS;Phoenix;AZ;2024;95000;Financing;In Transit
+Taycan Turbo;Dallas;TX;2023;153200;ACH Payment;Delivered
+911 GT3;Las Vegas;NV;2024;241000;Wire Transfer;Pending
+Panamera Turbo S;San Jose;CA;2022;132000;Cash;Delivered
+Cayenne Turbo GT;Houston;TX;2024;188000;Crypto Payment;Awaiting Delivery
+911 Carrera Cabriolet;Atlanta;GA;2023;127800;Credit Card;Delivered
+Macan;Orlando;FL;2021;58900;Bank Transfer;Pending
+718 Spyder RS;Portland;OR;2024;164000;Financing;In Transit
+Taycan Cross Turismo;Charlotte;NC;2023;118500;Wire Transfer;Delivered
+Cayenne S;Nashville;TN;2022;91300;Credit Card;Pending
+911 Targa 4S;Minneapolis;MN;2024;158750;Lease;Delivered
+Panamera;Philadelphia;PA;2020;72000;Bank Transfer;Cancelled
+Macan Electric;San Antonio;TX;2025;86500;Wire Transfer;Delivered
+911 Dakar;Salt Lake City;UT;2024;270000;Cash;Awaiting Pickup
+Taycan GTS;Raleigh;NC;2023;139000;Financing;In Transit
+Cayenne;Detroit;MI;2021;76800;Credit Card;Delivered
+718 Cayman GT4 RS;Columbus;OH;2024;173600;Wire Transfer;Pending
+911 Carrera GTS;Indianapolis;IN;2022;119900;Cash;Delivered
+Panamera 4 E-Hybrid;Fort Worth;TX;2023;109250;Lease;In Transit
+Macan T;Jacksonville;FL;2022;82000;Wire Transfer;Delivered
+Taycan Turbo S;San Diego;CA;2025;214000;Crypto Payment;Pending Review
+911 Carrera;Tampa;FL;2024;124500;Credit Card;Delivered
+Cayenne S;Sacramento;CA;2023;98200;Bank Transfer;Pending
+Macan;Cleveland;OH;2022;67500;Financing;Delivered
+Taycan;Milwaukee;WI;2025;116900;Wire Transfer;In Transit
+Panamera 4S;Kansas City;MO;2024;112000;Cash;Delivered
+718 Boxster;Omaha;NE;2021;74000;Debit Card;Cancelled
+911 Turbo;Albuquerque;NM;2024;198300;Wire Transfer;Awaiting Delivery
+Cayenne Coupe;Tucson;AZ;2023;103750;Wire Transfer;Pending Approval
+Macan GTS;Fresno;CA;2024;93600;Financing;Shipped
+Taycan 4S;Virginia Beach;VA;2025;129000;ACH Payment;In Transit
+Panamera Turbo;Colorado Springs;CO;2022;136000;Credit Card;Delivered
+911 GT3 RS;Arlington;TX;2024;286500;Wire Transfer;Pending
+Cayenne E-Hybrid;Bakersfield;CA;2023;92800;Lease;Delivered
+Macan T;Mesa;AZ;2022;72400;Cash;Awaiting Pickup
+Taycan Turbo;Atlanta;GA;2025;158500;Crypto Payment;Delivered
+718 Cayman;Long Beach;CA;2021;69900;Bank Transfer;Pending
+911 Targa 4;Oakland;CA;2024;141250;Financing;In Transit
+Panamera;Tulsa;OK;2020;71500;Wire Transfer;Delivered
+Cayenne Turbo;Wichita;KS;2023;146800;Credit Card;Pending
+Macan Electric;New Orleans;LA;2025;89700;Lease;Delivered
+911 Carrera S;Honolulu;HI;2022;104600;Bank Transfer;Cancelled
+Taycan GTS;Anaheim;CA;2024;142000;Wire Transfer;Delivered
+Cayenne;Henderson;NV;2021;78400;Cash;Awaiting Review
+718 Spyder RS;Lexington;KY;2025;169000;Financing;In Transit
+911 Dakar;Riverside;CA;2024;268900;Credit Card;Delivered
+Panamera 4;Corpus Christi;TX;2023;101300;Wire Transfer;Pending
+Macan S;St. Louis;MO;2021;66750;Cash;Delivered
+Taycan Cross Turismo;Pittsburgh;PA;2024;127900;Lease;In Transit
+Cayenne Turbo GT;Cincinnati;OH;2025;200000;Wire Transfer;Delivered
+911 Carrera Cabriolet;Anchorage;AK;2023;132000;Crypto Payment;Pending Review
+718 Cayman GT4 RS;Plano;TX;2024;176400;Credit Card;Delivered
+Panamera 4 E-Hybrid;Newark;NJ;2022;108500;Bank Transfer;Cancelled
+Macan;Greensboro;NC;2021;59000;Financing;Awaiting Delivery
+Taycan Turbo S;Lincoln;NE;2025;218000;Wire Transfer;Pending
+Cayenne S;Jersey City;NJ;2024;99950;Debit Card;Delivered
+911 Carrera GTS;Chandler;AZ;2024;121750;Credit Card;Delivered
+718 Boxster GTS;Reno;NV;2023;91500;Lease;Shipped
+Panamera Turbo S;Buffalo;NY;2022;134000;Wire Transfer;In Transit
+Macan GTS;Durham;NC;2024;96800;ACH Payment;Delivered
+Taycan 4S;Laredo;TX;2025;131600;Wire Transfer;Pending Approval
+Cayenne E-Hybrid;Madison;WI;2023;94300;Cash;Delivered
+911 Turbo S;Lubbock;TX;2025;242000;Crypto Payment;Awaiting Pickup
+718 Cayman S;Toledo;OH;2022;82750;Credit Card;Cancelled
+Macan Electric;Irvine;CA;2026;91300;Wire Transfer;Delivered
+Panamera;Garland;TX;2021;79900;Financing;Pending
+Cayenne Coupe;Irving;TX;2024;111000;Bank Transfer;In Transit
+911 Targa 4S;Chesapeake;VA;2023;156500;Cash;Delivered
+Taycan;Scottsdale;AZ;2025;119900;Lease;Pending
+Macan T;Norfolk;VA;2022;73200;Wire Transfer;Delivered
+911 GT3;Boise;ID;2024;224000;Wire Transfer;Awaiting Delivery
+911 Carrera;Orlando;FL;2024;126900;Credit Card;Delivered
+Cayenne;San Jose;CA;2023;84500;Bank Transfer;Pending
+Macan S;Tampa;FL;2022;69800;Financing;Delivered
+Taycan 4S;Denver;CO;2025;132700;Wire Transfer;In Transit
+Panamera;Austin;TX;2021;81000;Cash;Delivered
+718 Cayman;Seattle;WA;2023;78900;Debit Card;Cancelled
+911 Turbo S;Boston;MA;2026;249300;Wire Transfer;Awaiting Delivery
+Cayenne Coupe;Phoenix;AZ;2024;108750;Wire Transfer;Pending Approval
+Macan Electric;Chicago;IL;2026;92600;Financing;Shipped
+Taycan Turbo;Dallas;TX;2025;164000;ACH Payment;In Transit
+Panamera 4S;San Francisco;CA;2024;119000;Credit Card;Delivered
+911 GT3;Las Vegas;NV;2026;232500;Wire Transfer;Pending
+Cayenne E-Hybrid;Charlotte;NC;2023;96800;Lease;Delivered
+Macan T;Mesa;AZ;2022;74400;Cash;Awaiting Pickup
+Taycan GTS;Atlanta;GA;2025;148500;Crypto Payment;Delivered
+718 Boxster;Long Beach;CA;2021;71900;Bank Transfer;Pending
+911 Targa 4;Oakland;CA;2024;143250;Financing;In Transit
+Panamera Turbo;Tulsa;OK;2020;137500;Wire Transfer;Delivered
+Cayenne Turbo GT;Wichita;KS;2025;204800;Credit Card;Pending
+911 Dakar;New Orleans;LA;2024;271700;Lease;Delivered
 `;
+const familia = m => m.split(" ")[0];
 let DADOS = BRUTO.trim().split("\n").map(l=>{
-  const [modelo,cidade,estado,ano,preco,pagamento]=l.split(";");
-  return {modelo,cidade,estado,ano:Number(ano),preco:Number(preco),pagamento};
+  const [modelo,cidade,estado,ano,preco,pagamento,entrega]=l.split(";");
+  return {modelo,familia:familia(modelo),cidade,estado,ano:Number(ano),preco:Number(preco),pagamento,entrega};
 });
 // ====================================================================
 
 const $ = id => document.getElementById(id);
-const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"BRL",maximumFractionDigits:0});
-const curto = v => v>=1e6 ? "R$ "+(v/1e6).toFixed(1).replace(".",",")+" mi" : "R$ "+Math.round(v/1e3)+" mil";
+const brl = v => v.toLocaleString("pt-BR",{style:"currency",currency:"USD",maximumFractionDigits:0});
+const curto = v => v>=1e6 ? "US$ "+(v/1e6).toFixed(1).replace(".",",")+" mi" : "US$ "+Math.round(v/1e3)+" mil";
 const pct = v => (v*100).toFixed(0)+"%";
-const CAMPOS = {modelo:"f-modelo",estado:"f-estado",cidade:"f-cidade",ano:"f-ano",pagamento:"f-pagamento"};
-const ROTULO = {modelo:"Todos os modelos",estado:"Todos os estados",cidade:"Todas as cidades",ano:"Todos os anos",pagamento:"Todos os pagamentos"};
+const CAMPOS = {familia:"f-familia",modelo:"f-modelo",estado:"f-estado",cidade:"f-cidade",ano:"f-ano",pagamento:"f-pagamento",entrega:"f-entrega"};
+const ROTULO = {familia:"Todas as famílias",modelo:"Todos os modelos",estado:"Todos os estados",cidade:"Todas as cidades",ano:"Todos os anos",pagamento:"Todos os pagamentos",entrega:"Todas as entregas"};
 
 function montarFiltros(){
   for(const c in CAMPOS){
@@ -247,7 +251,7 @@ function render(){
   $("k-ticket").textContent=L.length?brl(receita/L.length):"–";
   $("rodape").textContent=`Mostrando ${L.length} de ${DADOS.length} vendas.`;
 
-  const mod=somar(L,"modelo").sort((a,b)=>b.r-a.r);
+  const mod=somar(L,"familia").sort((a,b)=>b.r-a.r);
   barras($("g-modelo"),mod);
   $("l-modelo").textContent=mod.length?`${mod[0].nome} lidera com ${pct(mod[0].r/receita)} da receita (${mod[0].n} vendas).`:"Sem dados para este recorte.";
 
@@ -256,7 +260,7 @@ function render(){
   const topoA=anos.reduce((t,a)=>!t||a.r>t.r?a:t,null);
   $("g-ano").innerHTML=anos.length?`<div class="colunas">${anos.map(a=>`<div class="col ${a===topoA?"topo":""}"><b>${curto(a.r)}</b><div class="pilar" style="height:${(a.r/maxA*80).toFixed(1)}%"></div></div>`).join("")}</div>
     <div class="anos">${anos.map(a=>`<span>${a.nome}</span>`).join("")}</div>`:'<p class="vazio">Nenhuma venda com esses filtros.</p>';
-  $("l-ano").textContent=topoA?`O melhor ano foi ${topoA.nome}, com ${curto(topoA.r)} em ${topoA.n} vendas.`:"Sem dados para este recorte.";
+  $("l-ano").textContent=topoA?`O ano de modelo ${topoA.nome} lidera, com ${curto(topoA.r)} em ${topoA.n} vendas.`:"Sem dados para este recorte.";
 
   const pag=somar(L,"pagamento").sort((a,b)=>b.n-a.n);
   const el=$("g-pag");
@@ -277,8 +281,8 @@ $("arquivo").addEventListener("change",e=>{
     const cab=linhas[0].split(sep).map(s=>s.trim().toLowerCase());
     const novos=linhas.slice(1).map(l=>{const c=l.split(sep);const o={};cab.forEach((h,i)=>o[h]=(c[i]||"").trim());
       o.ano=Number(o.ano);o.preco=Number(String(o.preco).replace(/[^\d.,-]/g,"").replace(/\.(?=\d{3})/g,"").replace(",","."));return o})
-      .filter(o=>o.modelo&&o.ano&&o.preco);
-    if(!novos.length){alert("Não encontrei linhas válidas. O CSV precisa das colunas: modelo, cidade, estado, ano, preco, pagamento.");return}
+      .map(o=>{o.familia=familia(o.modelo||"");return o}).filter(o=>o.modelo&&o.ano&&o.preco);
+    if(!novos.length){alert("Não encontrei linhas válidas. O CSV precisa das colunas: modelo, cidade, estado, ano, preco, pagamento, entrega.");return}
     DADOS=novos;montarFiltros();render();
   };
   r.readAsText(f);
@@ -286,4 +290,4 @@ $("arquivo").addEventListener("change",e=>{
 montarFiltros();render();
 </script>
 </body>
-</html>
+  </html>
